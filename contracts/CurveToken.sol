@@ -11,6 +11,11 @@ contract CurveToken is ERC777, IERC1363Receiver, Ownable {
     uint256 public constant INITIAL_TOKEN_PRICE = 1 ether;
     uint256 public constant TOKEN_PRICE_INCREMENT = 1 ether;
 
+    /**
+     * @dev Contract constructor.
+     * @param initialSupply The initial supply of tokens.
+     * @param defaultOperators An array of addresses to set as default operators for the token.
+     */
     constructor(
         uint256 initialSupply,
         address[] memory defaultOperators
@@ -19,6 +24,10 @@ contract CurveToken is ERC777, IERC1363Receiver, Ownable {
         tokenPrice = INITIAL_TOKEN_PRICE;
     }
 
+    /**
+     * @dev Buy tokens by sending ether to the contract.
+     * @param amount The amount of tokens to buy.
+     */
     function buyTokens(uint256 amount) public payable {
         require(amount > 0, "Amount must be greater than zero");
 
@@ -30,6 +39,10 @@ contract CurveToken is ERC777, IERC1363Receiver, Ownable {
         tokenPrice = calculateTokenPrice(totalPrice);
     }
 
+    /**
+     * @dev Sell tokens and receive ether from the contract.
+     * @param amount The amount of tokens to sell.
+     */
     function sellTokens(uint256 amount) public {
         require(amount > 0, "Amount must be greater than zero");
 
@@ -55,12 +68,22 @@ contract CurveToken is ERC777, IERC1363Receiver, Ownable {
                 ((amount - 1) * TOKEN_PRICE_INCREMENT)) / 2;
     }
 
+    /**
+     * @dev Calculate the payment a user will receive when selling a given amount of tokens.
+     * @param amount The amount of tokens to sell.
+     * @return The payment in wei.
+     */
     function calculatePayment(uint256 amount) private view returns (uint256) {
         return
             ((2 * amount * tokenPrice) -
                 ((amount - 1) * TOKEN_PRICE_INCREMENT)) / 2;
     }
 
+    /**
+     * @dev Calculate the current token price based on the reserve and total supply.
+     * @param totalPrice The total price paid to buy tokens.
+     * @return The current token price in wei.
+     */
     function calculateTokenPrice(
         uint256 totalPrice
     ) private view returns (uint256) {
