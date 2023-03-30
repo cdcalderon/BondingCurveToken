@@ -47,16 +47,26 @@ contract CurveToken is ERC777, IERC1363Receiver, Ownable {
      * @param amount The amount of tokens to buy.
      * @return The total price to buy the tokens in wei.
      */
-    function calculateTotalPrice(uint256 amount) private view returns (uint256) {
-        return ((2 * amount * INITIAL_TOKEN_PRICE) + ((amount - 1) * TOKEN_PRICE_INCREMENT)) / 2;
+    function calculateTotalPrice(
+        uint256 amount
+    ) private view returns (uint256) {
+        return
+            ((2 * amount * INITIAL_TOKEN_PRICE) +
+                ((amount - 1) * TOKEN_PRICE_INCREMENT)) / 2;
     }
 
     function calculatePayment(uint256 amount) private view returns (uint256) {
-        return ((2 * amount * tokenPrice) - ((amount - 1) * TOKEN_PRICE_INCREMENT)) / 2;
+        return
+            ((2 * amount * tokenPrice) -
+                ((amount - 1) * TOKEN_PRICE_INCREMENT)) / 2;
     }
 
-    function calculateTokenPrice(uint256 totalPrice) private view returns (uint256) {
-        return ((2 * totalPrice) - ((totalSupply() - 1) * TOKEN_PRICE_INCREMENT)) / (2 * totalSupply());
+    function calculateTokenPrice(
+        uint256 totalPrice
+    ) private view returns (uint256) {
+        return
+            ((2 * totalPrice) - ((totalSupply() - 1) * TOKEN_PRICE_INCREMENT)) /
+            (2 * totalSupply());
     }
 
     /**
