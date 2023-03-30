@@ -42,6 +42,11 @@ contract CurveToken is ERC777, IERC1363Receiver, Ownable {
         tokenPrice = calculateTokenPrice(payment);
     }
 
+    /**
+     * @dev Calculate the total price to buy a given amount of tokens.
+     * @param amount The amount of tokens to buy.
+     * @return The total price to buy the tokens in wei.
+     */
     function calculateTotalPrice(uint256 amount) private view returns (uint256) {
         return ((2 * amount * INITIAL_TOKEN_PRICE) + ((amount - 1) * TOKEN_PRICE_INCREMENT)) / 2;
     }
@@ -54,6 +59,15 @@ contract CurveToken is ERC777, IERC1363Receiver, Ownable {
         return ((2 * totalPrice) - ((totalSupply() - 1) * TOKEN_PRICE_INCREMENT)) / (2 * totalSupply());
     }
 
+    /**
+     * @dev Hook that is called when a transfer of ERC777 token is received.
+     * @param from The address which previously owned the token.
+     * @param amount The amount of tokens that were transferred.
+     * @param data Additional data with no specified format.
+     * @return `bytes4(keccak256("onTransferReceived(address,address,uint256,bytes)"))`.
+     * This function MUST return this exact value (unless overridden).
+     * This function MUST NOT have external interactions.
+     */
     function onTransferReceived(
         address /* operator */,
         address from,
@@ -69,6 +83,16 @@ contract CurveToken is ERC777, IERC1363Receiver, Ownable {
         return this.onTransferReceived.selector;
     }
 
+    /**
+     * @dev ERC1363 callback function. Called by the token contract when tokens are received.
+     * @param operator The address that triggered the operation.
+     * @param from The address which previously owned the token.
+     * @param amount The number of tokens received.
+     * @param data Additional data with no specified format.
+     * @param data Additional data with no specified format, as provided by the operator.
+     * @return bytes4 `bytes4(keccak256("onTokensReceived(address,address,uint256,bytes,bytes)"))`
+     * unless throwing.
+     */
     function onTokensReceived(
         address operator,
         address from,
