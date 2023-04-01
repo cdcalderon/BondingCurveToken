@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.9;
 
 import "@openzeppelin/contracts/token/ERC777/ERC777.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -35,7 +35,8 @@ contract CurveToken is ERC777, IERC1363Receiver, Ownable {
         require(msg.value >= totalPrice, "Insufficient payment");
 
         reserve += msg.value;
-        _mint(msg.sender, amount, "", "");
+        uint256 actualAmount = calculateAmount(msg.value);
+        _mint(msg.sender, actualAmount, "", "");
         tokenPrice = calculateTokenPrice(totalPrice);
     }
 
@@ -49,10 +50,26 @@ contract CurveToken is ERC777, IERC1363Receiver, Ownable {
         uint256 payment = calculatePayment(amount);
         require(payment <= reserve, "Insufficient reserve");
 
+        uint256 actualAmount = (amount * INITIAL_TOKEN_PRICE) / tokenPrice;
         reserve -= payment;
-        _burn(msg.sender, amount, "", "");
+        _burn(msg.sender, actualAmount, "", "");
         payable(msg.sender).transfer(payment);
         tokenPrice = calculateTokenPrice(payment);
+    }
+
+    /**
+     * @dev Calculates the amount of tokens that can be bought with a given payment.
+     * @param payment The payment amount in wei.
+     * @return The amount of tokens that can be bought.
+     */
+    function calculateAmount(uint256 payment) private view returns (uint256) {
+        uint256 amount = 0;
+        uint256 remainingPayment = payment;
+        while (remainingPayment >= calculateTotalPrice(amount + 1)) {
+            amount += 1;
+            remainingPayment -= calculateTotalPrice(amount);
+        }
+        return amount;
     }
 
     /**
@@ -96,7 +113,7 @@ contract CurveToken is ERC777, IERC1363Receiver, Ownable {
      * @dev Hook that is called when a transfer of ERC777 token is received.
      * @param from The address which previously owned the token.
      * @param amount The amount of tokens that were transferred.
-     * @param data Additional data with no specified format.
+     * @param data Additional data with no specified format. Should contain the minimum amount required.
      * @return `bytes4(keccak256("onTransferReceived(address,address,uint256,bytes)"))`.
      * This function MUST return this exact value (unless overridden).
      * This function MUST NOT have external interactions.
@@ -108,7 +125,8 @@ contract CurveToken is ERC777, IERC1363Receiver, Ownable {
         bytes memory data
     ) public virtual override returns (bytes4) {
         require(msg.sender == address(this), "Invalid token");
-        require(data.length == 0, "Data not supported");
+        uint256 minimumAmount = abi.decode(data, (uint256));
+        require(amount >= minimumAmount, "Slippage error: insufficient amount");
 
         uint256 payment = calculatePayment(amount);
         reserve += payment;
@@ -121,8 +139,7 @@ contract CurveToken is ERC777, IERC1363Receiver, Ownable {
      * @param operator The address that triggered the operation.
      * @param from The address which previously owned the token.
      * @param amount The number of tokens received.
-     * @param data Additional data with no specified format.
-     * @param data Additional data with no specified format, as provided by the operator.
+     * @param operatorData Additional data with no specified format, as provided by the operator.
      * @return bytes4 `bytes4(keccak256("onTokensReceived(address,address,uint256,bytes,bytes)"))`
      * unless throwing.
      */
@@ -131,10 +148,13 @@ contract CurveToken is ERC777, IERC1363Receiver, Ownable {
         address from,
         uint256 amount,
         bytes memory data,
-        bytes memory /*operatorData*/
+        bytes memory operatorData
     ) public returns (bytes4) {
         require(msg.sender == address(this), "Invalid token");
         require(data.length == 0, "Data not supported");
+
+        uint256 minimumOut = abi.decode(operatorData, (uint256));
+        require(amount >= minimumOut, "Insufficient amount received");
 
         uint256 payment = calculatePayment(amount);
         reserve -= payment;
